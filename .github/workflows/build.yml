@@ -1,0 +1,31 @@
+name: Build Flipper Zero 1.5.1 zh-TW
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download official firmware 1.5.1
+        run: |
+          git clone --recursive --depth 1 --shallow-submodules --branch 1.5.1 \
+            https://github.com/flipperdevices/flipperzero-firmware.git fw
+
+      - name: Apply zh-TW patch
+        working-directory: fw
+        run: git apply ../flipper-1.5.1-zh-TW.patch
+
+      - name: Build update package
+        working-directory: fw
+        run: ./fbt COMPACT=1 DEBUG=0 updater_package
+
+      - name: Upload .tgz
+        uses: actions/upload-artifact@v4
+        with:
+          name: flipper-zh-TW-1.5.1
+          path: fw/dist/f7-C/flipper-z-f7-update-*.tgz
+          if-no-files-found: error
