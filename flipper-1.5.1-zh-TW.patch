@@ -644,14 +644,16 @@ index c154a72..1fea68f 100644
          canvas,
          64,
 diff --git a/applications/main/gpio/views/gpio_usb_uart.c b/applications/main/gpio/views/gpio_usb_uart.c
-index 5e71457..c51a1f5 100644
+index 5e71457..ded5d22 100644
 --- a/applications/main/gpio/views/gpio_usb_uart.c
 +++ b/applications/main/gpio/views/gpio_usb_uart.c
-@@ -24,27 +24,27 @@ typedef struct {
+@@ -23,41 +23,41 @@ typedef struct {
+ 
  static void gpio_usb_uart_draw_callback(Canvas* canvas, void* _model) {
      GpioUsbUartModel* model = _model;
-     char temp_str[18];
+-    char temp_str[18];
 -    elements_button_left(canvas, "Config");
++    char temp_str[32]; // zh-TW: UTF-8 text needs more room
 +    elements_button_left(canvas, "設定");
      canvas_draw_line(canvas, 2, 10, 125, 10);
      canvas_draw_line(canvas, 44, 52, 123, 52);
@@ -664,24 +666,55 @@ index 5e71457..c51a1f5 100644
  
      canvas_set_font(canvas, FontSecondary);
 -    snprintf(temp_str, 18, "COM PORT:%u", model->vcp_port);
-+    snprintf(temp_str, 18, "COM 埠:%u", model->vcp_port);
++    snprintf(temp_str, sizeof(temp_str), "COM 埠:%u", model->vcp_port);
      canvas_draw_str_aligned(canvas, 126, 8, AlignRight, AlignBottom, temp_str);
 -    snprintf(temp_str, 18, "Pin %u", model->tx_pin);
-+    snprintf(temp_str, 18, "腳位 %u", model->tx_pin);
++    snprintf(temp_str, sizeof(temp_str), "腳位 %u", model->tx_pin);
      canvas_draw_str(canvas, 22, 25, temp_str);
 -    snprintf(temp_str, 18, "Pin %u", model->rx_pin);
-+    snprintf(temp_str, 18, "腳位 %u", model->rx_pin);
++    snprintf(temp_str, sizeof(temp_str), "腳位 %u", model->rx_pin);
      canvas_draw_str(canvas, 22, 42, temp_str);
  
      if(model->baudrate == 0)
 -        snprintf(temp_str, 18, "Baud: ????");
-+        snprintf(temp_str, 18, "傳輸率:????");
++        snprintf(temp_str, sizeof(temp_str), "傳輸率:????");
      else
 -        snprintf(temp_str, 18, "Baud: %lu", model->baudrate);
-+        snprintf(temp_str, 18, "傳輸率:%lu", model->baudrate);
++        snprintf(temp_str, sizeof(temp_str), "傳輸率:%lu", model->baudrate);
      canvas_draw_str(canvas, 45, 62, temp_str);
  
      if(model->tx_cnt < 100000000) {
+         canvas_set_font(canvas, FontSecondary);
+         canvas_draw_str_aligned(canvas, 127, 24, AlignRight, AlignBottom, "B.");
+         canvas_set_font(canvas, FontKeyboard);
+-        snprintf(temp_str, 18, "%lu", model->tx_cnt);
++        snprintf(temp_str, sizeof(temp_str), "%lu", model->tx_cnt);
+         canvas_draw_str_aligned(canvas, 116, 24, AlignRight, AlignBottom, temp_str);
+     } else {
+         canvas_set_font(canvas, FontSecondary);
+         canvas_draw_str_aligned(canvas, 127, 24, AlignRight, AlignBottom, "KiB.");
+         canvas_set_font(canvas, FontKeyboard);
+-        snprintf(temp_str, 18, "%lu", model->tx_cnt / 1024);
++        snprintf(temp_str, sizeof(temp_str), "%lu", model->tx_cnt / 1024);
+         canvas_draw_str_aligned(canvas, 111, 24, AlignRight, AlignBottom, temp_str);
+     }
+ 
+@@ -65,13 +65,13 @@ static void gpio_usb_uart_draw_callback(Canvas* canvas, void* _model) {
+         canvas_set_font(canvas, FontSecondary);
+         canvas_draw_str_aligned(canvas, 127, 41, AlignRight, AlignBottom, "B.");
+         canvas_set_font(canvas, FontKeyboard);
+-        snprintf(temp_str, 18, "%lu", model->rx_cnt);
++        snprintf(temp_str, sizeof(temp_str), "%lu", model->rx_cnt);
+         canvas_draw_str_aligned(canvas, 116, 41, AlignRight, AlignBottom, temp_str);
+     } else {
+         canvas_set_font(canvas, FontSecondary);
+         canvas_draw_str_aligned(canvas, 127, 41, AlignRight, AlignBottom, "KiB.");
+         canvas_set_font(canvas, FontKeyboard);
+-        snprintf(temp_str, 18, "%lu", model->rx_cnt / 1024);
++        snprintf(temp_str, sizeof(temp_str), "%lu", model->rx_cnt / 1024);
+         canvas_draw_str_aligned(canvas, 111, 41, AlignRight, AlignBottom, temp_str);
+     }
+ 
 diff --git a/applications/main/ibutton/ibutton.c b/applications/main/ibutton/ibutton.c
 index eff44c6..da46519 100644
 --- a/applications/main/ibutton/ibutton.c
@@ -6506,10 +6539,16 @@ index 132416d..a0f8604 100644
  }
  
 diff --git a/applications/main/nfc/views/dict_attack.c b/applications/main/nfc/views/dict_attack.c
-index a71e466..4a2f501 100644
+index a71e466..78997b5 100644
 --- a/applications/main/nfc/views/dict_attack.c
 +++ b/applications/main/nfc/views/dict_attack.c
-@@ -44,33 +44,33 @@ static void dict_attack_draw_mf_classic(Canvas* canvas, DictAttackViewModel* m)
+@@ -39,38 +39,38 @@ typedef struct {
+ } DictAttackViewModel;
+ 
+ static void dict_attack_draw_mf_classic(Canvas* canvas, DictAttackViewModel* m) {
+-    char draw_str[32] = {};
++    char draw_str[48] = {}; // zh-TW: UTF-8 text needs more room
+     canvas_set_font(canvas, FontSecondary);
  
      switch(m->nested_phase) {
      case MfClassicNestedPhaseAnalyzePRNG:
@@ -6570,7 +6609,7 @@ index a71e466..4a2f501 100644
      }
      canvas_draw_str_aligned(canvas, 0, 10, AlignLeft, AlignTop, draw_str);
      float dict_progress = 0;
-@@ -134,11 +134,11 @@ static void dict_attack_draw_mf_classic(Canvas* canvas, DictAttackViewModel* m)
+@@ -134,21 +134,21 @@ static void dict_attack_draw_mf_classic(Canvas* canvas, DictAttackViewModel* m)
      snprintf(
          draw_str,
          sizeof(draw_str),
@@ -6584,7 +6623,10 @@ index a71e466..4a2f501 100644
      canvas_draw_str_aligned(canvas, 0, 43, AlignLeft, AlignTop, draw_str);
  }
  
-@@ -148,7 +148,7 @@ static void dict_attack_draw_mf_ultralight_c(Canvas* canvas, DictAttackViewModel
+ static void dict_attack_draw_mf_ultralight_c(Canvas* canvas, DictAttackViewModel* m) {
+-    char draw_str[32] = {};
++    char draw_str[48] = {}; // zh-TW: UTF-8 text needs more room
+     canvas_set_font(canvas, FontSecondary);
  
      canvas_draw_str_aligned(canvas, 0, 0, AlignLeft, AlignTop, furi_string_get_cstr(m->header));
  
@@ -8201,10 +8243,15 @@ index 6acf2ee..edf16ab 100644
  }
  
 diff --git a/applications/services/power/power_service/views/power_off.c b/applications/services/power/power_service/views/power_off.c
-index dbc233d..767b9be 100644
+index dbc233d..f7d4b5c 100644
 --- a/applications/services/power/power_service/views/power_off.c
 +++ b/applications/services/power/power_service/views/power_off.c
-@@ -19,24 +19,24 @@ static void power_off_draw_callback(Canvas* canvas, void* _model) {
+@@ -15,28 +15,28 @@ typedef struct {
+ static void power_off_draw_callback(Canvas* canvas, void* _model) {
+     furi_assert(_model);
+     PowerOffModel* model = _model;
+-    char buff[32];
++    char buff[48]; // zh-TW: UTF-8 text needs more room
  
      canvas_set_color(canvas, ColorBlack);
      canvas_set_font(canvas, FontPrimary);
@@ -10097,7 +10144,7 @@ index f0997f7..1361117 100644
  
  static void hid_tiktok_reset_cursor(HidTikTok* hid_tiktok) {
 diff --git a/applications/system/snake_game/snake_game.c b/applications/system/snake_game/snake_game.c
-index aee9fd1..69dcd24 100644
+index aee9fd1..f0480b9 100644
 --- a/applications/system/snake_game/snake_game.c
 +++ b/applications/system/snake_game/snake_game.c
 @@ -125,11 +125,11 @@ static void snake_game_render_callback(Canvas* const canvas, void* ctx) {
@@ -10108,8 +10155,9 @@ index aee9fd1..69dcd24 100644
 +        canvas_draw_str(canvas, 37, 31, "遊戲結束");
  
          canvas_set_font(canvas, FontSecondary);
-         char buffer[12];
+-        char buffer[12];
 -        snprintf(buffer, sizeof(buffer), "Score: %u", snake_state->len - 7U);
++        char buffer[24]; // zh-TW: UTF-8 text needs more room
 +        snprintf(buffer, sizeof(buffer), "分數:%u", snake_state->len - 7U);
          canvas_draw_str_aligned(canvas, 64, 41, AlignCenter, AlignBottom, buffer);
      }
