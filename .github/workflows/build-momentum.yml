@@ -1,0 +1,62 @@
+name: Build Momentum zh-TW
+
+on:
+  push:
+    branches: [momentum-zh-TW]
+  workflow_dispatch:
+
+env:
+  # kalicyh/Momentum-Firmware-CN v1.1.6 (Momentum + Chinese UI), external apps pinned by it
+  CN_REPO: https://github.com/kalicyh/Momentum-Firmware-CN.git
+  CN_COMMIT: 28b4580a850a6aadea44ce2e5286e0214af75d08
+  OPENCC_COMMIT: fae2a0a911c30764e669a7d8b0591cd8e852934a
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Momentum CN source (v1.1.6)
+        run: |
+          git init fw && cd fw
+          git remote add origin "$CN_REPO"
+          git fetch --depth 1 origin "$CN_COMMIT"
+          git checkout --quiet FETCH_HEAD
+          git submodule update --init --recursive --depth 1 --jobs 4
+
+      - name: Download OpenCC dictionaries
+        run: |
+          git clone --filter=blob:none --no-checkout https://github.com/BYVoid/OpenCC.git opencc
+          cd opencc && git sparse-checkout set data/dictionary && git checkout --quiet "$OPENCC_COMMIT"
+
+      - name: Convert Chinese UI to Traditional (Taiwan)
+        run: OPENCC_DICT=opencc/data/dictionary python3 tools/convert_tree.py fw
+
+      - name: Build bdfconv (font tool)
+        run: |
+          git clone --depth 1 https://github.com/olikraus/u8g2.git /tmp/u8g2
+          make -C /tmp/u8g2/tools/font/bdfconv
+          cp /tmp/u8g2/tools/font/bdfconv/bdfconv fw/tools/u8g2_cn_tools/bdfconv
+          chmod +x fw/tools/u8g2_cn_tools/bdfconv
+
+      - name: Build update package
+        working-directory: fw
+        run: |
+          MOMENTUM_UI_LANG=zh_CN MOMENTUM_DEVICE=real \
+          ./fbt COMPACT=1 DEBUG=0 -k updater_package
+
+      - name: Package .tgz
+        run: |
+          UPDATE_DIR="$(find fw/dist/f7-C -maxdepth 1 -type d -name 'f7-update-*' | head -n1)"
+          mkdir -p out
+          tar czf "out/momentum-zh-TW-$(basename "$UPDATE_DIR" | sed 's/^f7-update-//').tgz" \
+            -C "$(dirname "$UPDATE_DIR")" "$(basename "$UPDATE_DIR")"
+          ls -l out
+
+      - name: Upload .tgz
+        uses: actions/upload-artifact@v4
+        with:
+          name: momentum-zh-TW
+          path: out/*.tgz
+          if-no-files-found: error
