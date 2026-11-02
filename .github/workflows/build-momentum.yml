@@ -33,6 +33,9 @@ jobs:
       - name: Convert Chinese UI to Traditional (Taiwan)
         run: OPENCC_DICT=opencc/data/dictionary python3 tools/convert_tree.py fw
 
+      - name: Localize remaining English UI to Traditional Chinese
+        run: python3 tools/localize_en.py fw
+
       - name: Fix buffers enlarged by Traditional terms
         run: bash tools/post_patch.sh fw
 
