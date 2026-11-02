@@ -7,9 +7,18 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 M = {}
 M.update(json.load(open(os.path.join(HERE, 'tm.json'), encoding='utf-8')))
-for mod in ('en_zh_core', 'en_zh_ext', 'en_zh_ext2'):
-    m = __import__(mod)
+for mod in ('en_zh_core', 'en_zh_ext', 'en_zh_ext2', 'en_zh_ext3'):
+    try:
+        m = __import__(mod)
+    except ImportError:
+        continue
     M.update(m.T)
+
+def _esc(s):
+    return s.replace('\n', '\\n').replace('\t', '\\t').replace('\r', '\\r')
+# Normalize: dict sources may contain real newlines or already-escaped \n; both must
+# become the two-char C escape to match the extracted literal and emit valid C.
+M = {_esc(k): _esc(v) for k, v in M.items()}
 CALLS = r'(submenu_add_item(?:_ex)?|submenu_set_header|variable_item_list_add|variable_item_set_current_value_text|dialog_ex_set_header|dialog_ex_set_text|dialog_ex_set_left_button_text|dialog_ex_set_right_button_text|dialog_ex_set_center_button_text|dialog_message_set_header|dialog_message_set_text|popup_set_header|popup_set_text|widget_add_string_element|widget_add_string_multiline_element|widget_add_text_scroll_element|widget_add_text_box_element|widget_add_button_element|text_input_set_header_text|byte_input_set_header_text|number_input_set_header_text|text_box_set_text|loading|canvas_draw_str|canvas_draw_str_aligned|elements_button_left|elements_button_right|elements_button_center|elements_multiline_text|elements_multiline_text_aligned|menu_add_item|furi_string_set_str|furi_string_set)'
 callre = re.compile(CALLS + r'\s*\(')
 litre = re.compile(r'"((?:[^"\\]|\\.)*)"')
